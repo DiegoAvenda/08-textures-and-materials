@@ -1,6 +1,7 @@
 import * as THREE from "three"
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
 import { Pane } from "tweakpane"
+import { RGBELoader } from "three/addons/loaders/RGBELoader.js"
 
 class App {
   #threejs_ = null
@@ -103,7 +104,7 @@ class App {
 
     const mat = this.#Test_MeshLambertMaterial(pane)
 
-    const cubeGeo = new THREE.BoxGeometry(1, 1, 1)
+    const cubeGeo = new THREE.BoxGeometry(1, 1, 1, 128, 128, 128)
     this.#cube_ = new THREE.Mesh(cubeGeo, mat)
     this.#cube_.castShadow = true
     this.#cube_.receiveShadow = true
@@ -121,7 +122,8 @@ class App {
     this.#knot_.receiveShadow = true
     this.#scene_.add(this.#knot_)
 
-    this.#scene_.add(this.#cube_)
+    this.#sphere_.visible = false
+    this.#knot_.visible = false
   }
 
   #Test_MeshLambertMaterial(pane) {
@@ -129,18 +131,35 @@ class App {
     const map = loader.load("./textures/RED_BRICK_001_1K_BaseColor.jpg")
     map.colorSpace = THREE.SRGBColorSpace
 
-    const aoMap = loader.load("./textures/RED_BRICK_001_1K_AmbientOcclusion")
+    const aoMap = loader.load(
+      "./textures/RED_BRICK_001_1K_AmbientOcclusion.jpg"
+    )
+
+    const displacementMap = loader.load("textures/displacement.png")
+
+    const rgbeLoader = new RGBELoader()
 
     const mat = new THREE.MeshLambertMaterial({
       color: 0xffffff,
-      //map: map,
+      map: map,
       aoMap: aoMap,
+    })
+
+    rgbeLoader.load("/skybox/golden_bay_4k.hdr", (texture) => {
+      texture.mapping = THREE.EquirectangularReflectionMapping
+      mat.envMap = texture
+
+      this.#scene_.background = texture
     })
 
     const folder = pane.addFolder({ title: "MeshLambertMaterial" })
 
     folder.addBinding(mat, "color", { view: "color", color: { type: "float" } })
     folder.addBinding(mat, "aoMapIntensity", { min: 0, max: 1 })
+    folder.addBinding(mat, "emissive", {
+      view: "color",
+      color: { type: "float" },
+    })
 
     return mat
   }
