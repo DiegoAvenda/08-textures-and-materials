@@ -10,6 +10,10 @@ class App {
   #clock_ = null
   #controls_ = null
 
+  #cube_ = null
+  #sphere_ = null
+  #knot_ = null
+
   constructor() {}
 
   async initialize() {
@@ -55,21 +59,107 @@ class App {
     this.#scene_ = new THREE.Scene()
     this.#scene_.background = new THREE.Color(0x000000)
 
+    //create hemisphere light
+    const hemiLight = new THREE.HemisphereLight(0xd3e2e9, 0x856b38, 0.5)
+    this.#scene_.add(hemiLight)
+
+    //create a point loght
+    const pointLight = new THREE.PointLight(0xffffff, 2, 100)
+    pointLight.position.set(0.5, 0.7, 1)
+    pointLight.castShadow = true
+    this.#scene_.add(pointLight)
+
+    const helper = new THREE.PointLightHelper(pointLight, 0.1)
+    this.#scene_.add(helper)
+
     //create tweakpane
     const pane = new Pane()
 
-    const mat = this.#Test_MeshBasicMaterial(pane)
+    const params = {
+      type: "Cube",
+    }
+
+    pane
+      .addBinding(params, "type", {
+        options: {
+          Cube: "Cube",
+          Sphere: "Sphere",
+          Knot: "Knot",
+        },
+      })
+      .on("change", (evt) => {
+        this.#cube_.visible = false
+        this.#sphere_.visible = false
+        this.#knot_.visible = false
+
+        if (evt.value === "Cube") {
+          this.#cube_.visible = true
+        } else if (evt.value === "Sphere") {
+          this.#sphere_.visible = true
+        } else {
+          this.#knot_.visible = true
+        }
+      })
+
+    const mat = this.#Test_MeshLambertMaterial(pane)
 
     const cubeGeo = new THREE.BoxGeometry(1, 1, 1)
-    const cube = new THREE.Mesh(cubeGeo, mat)
-    cube.position.set(0, 0, 0)
-    this.#scene_.add(cube)
+    this.#cube_ = new THREE.Mesh(cubeGeo, mat)
+    this.#cube_.castShadow = true
+    this.#cube_.receiveShadow = true
+    this.#scene_.add(this.#cube_)
+
+    const sphereGeo = new THREE.SphereGeometry(1, 32, 32)
+    this.#sphere_ = new THREE.Mesh(sphereGeo, mat)
+    this.#sphere_.castShadow = true
+    this.#sphere_.receiveShadow = true
+    this.#scene_.add(this.#sphere_)
+
+    const knotGeo = new THREE.TorusKnotGeometry(0.5, 0.1, 100, 16)
+    this.#knot_ = new THREE.Mesh(knotGeo, mat)
+    this.#knot_.castShadow = true
+    this.#knot_.receiveShadow = true
+    this.#scene_.add(this.#knot_)
+
+    this.#scene_.add(this.#cube_)
+  }
+
+  #Test_MeshLambertMaterial(pane) {
+    const loader = new THREE.TextureLoader()
+    const map = loader.load("./textures/RED_BRICK_001_1K_BaseColor.jpg")
+    map.colorSpace = THREE.SRGBColorSpace
+
+    const aoMap = loader.load("./textures/RED_BRICK_001_1K_AmbientOcclusion")
+
+    const mat = new THREE.MeshLambertMaterial({
+      color: 0xffffff,
+      //map: map,
+      aoMap: aoMap,
+    })
+
+    const folder = pane.addFolder({ title: "MeshLambertMaterial" })
+
+    folder.addBinding(mat, "color", { view: "color", color: { type: "float" } })
+    folder.addBinding(mat, "aoMapIntensity", { min: 0, max: 1 })
+
+    return mat
   }
 
   #Test_MeshBasicMaterial(pane) {
+    const loader = new THREE.TextureLoader()
+    const map = loader.load("./textures/RED_BRICK_001_1K_BaseColor.jpg")
+    map.colorSpace = THREE.SRGBColorSpace
+
     const mat = new THREE.MeshBasicMaterial({
       color: 0xffffff,
+      map: map,
     })
+
+    const folder = pane.addFolder({ title: "MeshBasicMaterial" })
+    folder.addBinding(mat, "color", { view: "color", color: { type: "float" } })
+    folder.addBinding(mat, "wireframe")
+
+    return mat
   }
 
   #onWindowResize_() {
