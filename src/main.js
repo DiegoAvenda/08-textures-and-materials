@@ -102,7 +102,14 @@ class App {
         }
       })
 
-    const mat = this.#Test_MeshLambertMaterial(pane)
+    const lightFolder = pane.addFolder({ title: "Light" })
+    lightFolder.addBinding(pointLight, "position", {
+      x: { min: -2, max: 2 },
+      y: { min: -2, max: 2 },
+      z: { min: -2, max: 2 },
+    })
+
+    const mat = this.#Test_MeshPhongMaterial(pane)
 
     const cubeGeo = new THREE.BoxGeometry(1, 1, 1, 128, 128, 128)
     this.#cube_ = new THREE.Mesh(cubeGeo, mat)
@@ -126,10 +133,27 @@ class App {
     this.#knot_.visible = false
   }
 
+  #Test_MeshPhongMaterial(pane) {
+    const mat = new THREE.MeshPhongMaterial({})
+
+    const folder = pane.addFolder({ title: "MeshPhongMaterial" })
+
+    folder.addBinding(mat, "color", { view: "color", color: { tye: "float" } })
+    folder.addBinding(mat, "emissive", {
+      view: "color",
+      color: { type: "float" },
+    })
+    folder.addBinding(mat, "shininess", { min: 0, max: 1000 })
+
+    return mat
+  }
+
   #Test_MeshLambertMaterial(pane) {
     const loader = new THREE.TextureLoader()
     const map = loader.load("./textures/RED_BRICK_001_1K_BaseColor.jpg")
     map.colorSpace = THREE.SRGBColorSpace
+
+    const normalMap = loader.load("/textures/RED_BRICK_001_1K_Normal.jpg")
 
     const aoMap = loader.load(
       "./textures/RED_BRICK_001_1K_AmbientOcclusion.jpg"
@@ -141,15 +165,17 @@ class App {
 
     const mat = new THREE.MeshLambertMaterial({
       color: 0xffffff,
-      map: map,
-      aoMap: aoMap,
+      //map: map,
+      //aoMap: aoMap,
+      normalMap: normalMap,
+      normalScale: new THREE.Vector2(1, -1),
     })
 
     rgbeLoader.load("/skybox/golden_bay_4k.hdr", (texture) => {
       texture.mapping = THREE.EquirectangularReflectionMapping
-      mat.envMap = texture
+      //  mat.envMap = texture
 
-      this.#scene_.background = texture
+      // this.#scene_.background = texture
     })
 
     const folder = pane.addFolder({ title: "MeshLambertMaterial" })
